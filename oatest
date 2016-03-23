@@ -1,0 +1,91 @@
+# --*-- coding: utf-8 -*-
+
+import urllib
+import urllib2
+import cookielib
+import sys
+import hashlib
+
+reset_url = 'http://192.168.0.254/data/system.backup.json'
+reboot_url = 'http://192.168.0.254/data/reboot.json'
+main_url = 'http://192.168.0.254'
+login_url = 'http://192.168.0.254/data/login.json'
+login_name = 'admin'
+login_password = 'password'
+ip = 'http://192.168.0.254'
+
+def get_encodes(cookie):
+    m = hashlib.md5()
+    m.update(login_password.encode('utf-8'))
+    catStr = m.hexdigest().upper() + ':' + cookie
+
+    n = hashlib.md5()
+    n.update(catStr.encode('utf-8'))
+    cipher = n.hexdigest().upper()
+    encodes = login_name + ':' + cipher
+    return encodes
+
+def main_test():
+    r = urllib2.Request(url='http://192.168.0.254')
+    #r.add_header('User-Agent', 'awesome fetcher')
+    #r.add_data(urllib.urlencode({'foo': 'bar'})
+    r.add_header('Cookie', 'COOKIE=c0a800c8')
+    #response = urllib2.urlopen(r)     #post method
+    urllib2.urlopen('http://192.168.0.254')
+
+def page_login():
+    cookie=cookielib.CookieJar()
+    handler=urllib2.HTTPCookieProcessor(cookie)
+    opener=urllib2.build_opener(handler)
+    opener.open(main_url)
+    for ck in cookie:
+    	if ck.name == 'COOKIE':
+    		cookieStr = ck.value
+    		break
+
+    encodes = get_encodes(cookieStr)		
+
+    post_login_value = {
+        'operation':'login',
+        'encoded':encodes,
+        'nonce':cookieStr,
+    }
+    post_login_data = urllib.urlencode(post_login_value)
+    req = urllib2.Request(login_url,post_login_data)
+    req.add_header('Referer',ip)
+    resp = opener.open(req)
+    #print resp.info()
+
+    post_value = {'operation':'factory'}
+    post_data = urllib.urlencode(post_value)
+    req = urllib2.Request(reset_url,post_data)
+    req.add_header('Referer',ip)
+    resp = opener.open(req)
+
+
+def test():
+    post_value = {}
+    post_data = urllib.urlencode(post_value)
+    req = urllib2.Request(reboot_url,post_data)
+    resp = urllib2.urlopen(req)
+
+def test_reset():
+	post_value = {
+		'operation':'factory',
+	}
+	post_data = urllib.urlencode(post_value)
+	req = urllib2.Request(reset_url,post_data)
+	resp = urllib2.urlopen(req)
+
+def main():
+    print sys.argv
+    param = sys.argv[1]
+    if (param == '1'):
+        page_login()
+    elif (param == '2'):
+        test()
+    elif (param == '3'):
+    	test_reset()    
+
+if __name__ == '__main__':
+    main()
